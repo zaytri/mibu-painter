@@ -6,7 +6,7 @@ import playerModel from '@/models/player.geo.json'
 import playerSlimModel from '@/models/player_slim.geo.json'
 import { Canvas, useLoader } from '@react-three/fiber'
 import { useDrag } from '@use-gesture/react'
-import { Suspense, memo, useState } from 'react'
+import { Suspense, memo, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import './App.css'
 
@@ -49,7 +49,8 @@ function Model() {
   })
 
   const [toggled, setToggled] = useState(false)
-  const [index, setIndex] = useState(9)
+  const [index, setIndex] = useState(2)
+  const rotateIndex = true
 
   const [rotation, setRotation] = useState<[number, number, number]>([
     Math.PI / 8,
@@ -69,14 +70,24 @@ function Model() {
     setRotation(newRotation)
   })
 
-  const modelHeight = models[index]['minecraft:geometry'][0].bones.reduce(
-    (maxHeight, bone) => {
-      if (!bone.cubes) return maxHeight
-      const cube = bone.cubes[0]
-      return Math.max(cube.size[1] + cube.origin[1], maxHeight)
-    },
-    0,
-  )
+  const modelMinCoords = [Infinity, Infinity, Infinity]
+  const modelMaxCoords = [-Infinity, -Infinity, -Infinity]
+  models[index]['minecraft:geometry'][0].bones.forEach(bone => {
+    if (!bone.cubes) return
+    bone.cubes.forEach(cube => {
+      for (let i = 0; i < 3; i++) {
+        modelMinCoords[i] = Math.min(cube.origin[i], modelMinCoords[i])
+        modelMaxCoords[i] = Math.max(
+          cube.origin[i] + cube.size[i],
+          modelMaxCoords[i],
+        )
+      }
+    })
+  })
+
+  const cameraDistance =
+    -1.5 *
+    Math.max(...modelMaxCoords, ...modelMinCoords.map(coord => Math.abs(coord)))
 
   return (
     <div className=' h-full w-full border border-white'>
@@ -84,23 +95,50 @@ function Model() {
         frameloop='demand'
         onClick={() => {
           setToggled(!toggled)
-          // setIndex((index + 1) % models.length)
+          if (rotateIndex) setIndex((index + 1) % models.length)
         }}
         {...bind()}
         className=' touch-none'
       >
         <ambientLight intensity={5} />
         <pointLight position={[10, 10, 10]} />
-        <group position={[0, modelHeight / 2, 0]}>
-          <group rotation={rotation} position={[0, -modelHeight / 2, -200]}>
-            <group position={[0, -modelHeight / 2, 0]}>
-              <axesHelper args={[50]} />
-              <MinecraftModel
-                model={models[index]}
-                texture={textures[index]}
-                scale={1}
-              />
-            </group>
+        <group
+          rotation={rotation}
+          position={[0, 0, cameraDistance]}
+          renderOrder={10}
+        >
+          <axesHelper args={[500]} visible={false} />
+        </group>
+        <group rotation={rotation} position={[0, 0, cameraDistance]}>
+          <group
+            position={[
+              -(modelMaxCoords[0] + modelMinCoords[0]) / 2,
+              -(modelMaxCoords[1] + modelMinCoords[1]) / 2,
+              (modelMaxCoords[2] + modelMinCoords[2]) / 2,
+            ]}
+          >
+            <box3Helper
+              box={
+                new THREE.Box3(
+                  new THREE.Vector3(
+                    modelMinCoords[0],
+                    modelMinCoords[1],
+                    -modelMaxCoords[2],
+                  ),
+                  new THREE.Vector3(
+                    modelMaxCoords[0],
+                    modelMaxCoords[1],
+                    -modelMinCoords[2],
+                  ),
+                )
+              }
+              visible={false}
+            />
+            <MinecraftModel
+              model={models[index]}
+              texture={textures[index]}
+              scale={1}
+            />
           </group>
         </group>
       </Canvas>
@@ -200,7 +238,9 @@ const Group = memo(function Group({
         {group.children.map((childGroup, index) => (
           <Group
             key={childGroup.name}
-            group={{ ...childGroup, mirror: childGroup.mirror || group.mirror }}
+            group={{
+              ...childGroup,
+            }}
             minecraftGeometry={minecraftGeometry}
             texture={texture}
             order={index}
@@ -210,7 +250,10 @@ const Group = memo(function Group({
           group.cubes.map((cube, index) => (
             <Cube
               key={index}
-              cube={{ ...cube, mirror: cube.mirror || group.mirror }}
+              cube={{
+                ...cube,
+                mirror: cube.mirror === undefined ? group.mirror : cube.mirror,
+              }}
               group={group}
               minecraftGeometry={minecraftGeometry}
               texture={texture}
@@ -234,7 +277,6 @@ const Cube = memo(function Cube({
   group,
   texture,
 }: CubeProps) {
-  if (cube.mirror) console.log(group.name)
   const { texture_width, texture_height, identifier } =
     minecraftGeometry.description
 
@@ -277,9 +319,9 @@ const Cube = memo(function Cube({
   }
 
   const faces = {
-    right: uvFace(u, v, depth, height),
+    right: uvFace(u, v, depth, height, { flipX: cube.mirror }),
     front: uvFace(u + depth, v, width, height, { flipX: cube.mirror }),
-    left: uvFace(u + depth + width, v, depth, height),
+    left: uvFace(u + depth + width, v, depth, height, { flipX: cube.mirror }),
     back: uvFace(u + depth * 2 + width, v, width, height, {
       flipX: cube.mirror,
     }),
