@@ -4,7 +4,7 @@ import dragonModel from '@/models/ender_dragon.geo.json'
 import guardianModel from '@/models/guardian.geo.json'
 import playerModel from '@/models/player.geo.json'
 import playerSlimModel from '@/models/player_slim.geo.json'
-import { Canvas, useLoader } from '@react-three/fiber'
+import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { useDrag } from '@use-gesture/react'
 import { Suspense, memo, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -18,19 +18,37 @@ function App() {
   )
 }
 
+const raycaster = new THREE.Raycaster()
+const pointer = new THREE.Vector2()
+
 function Model() {
-  const textures = [
-    useLoader(THREE.TextureLoader, 'skin.png'),
-    useLoader(THREE.TextureLoader, 'skin2.png'),
-    useLoader(THREE.TextureLoader, 'camel.png'),
-    useLoader(THREE.TextureLoader, 'axolotl_blue.png'),
-    useLoader(THREE.TextureLoader, 'axolotl_cyan.png'),
-    useLoader(THREE.TextureLoader, 'axolotl_gold.png'),
-    useLoader(THREE.TextureLoader, 'axolotl_lucy.png'),
-    useLoader(THREE.TextureLoader, 'axolotl_wild.png'),
-    useLoader(THREE.TextureLoader, 'guardian.png'),
-    useLoader(THREE.TextureLoader, 'dragon.png'),
+  const canvasPainterRef = useRef<HTMLCanvasElement>(null)
+  const canvasTextureRef = useRef<THREE.CanvasTexture | null>(null)
+  useEffect(() => {
+    if (!canvasPainterRef.current) return
+
+    canvasTextureRef.current = new THREE.CanvasTexture(canvasPainterRef.current)
+    canvasTextureRef.current.magFilter = THREE.NearestFilter
+    canvasTextureRef.current.minFilter = THREE.NearestFilter
+  }, [!!canvasPainterRef.current])
+
+  const images = [
+    'skin.png',
+    'skin2.png',
+    'camel.png',
+    'axolotl_blue.png',
+    'axolotl_cyan.png',
+    'axolotl_gold.png',
+    'axolotl_lucy.png',
+    'axolotl_wild.png',
+    'guardian.png',
+    'dragon.png',
   ]
+
+  const textures = images.map(image => {
+    return useLoader(THREE.TextureLoader, image)
+  })
+
   const models = [
     playerSlimModel,
     playerModel,
@@ -72,7 +90,9 @@ function Model() {
 
   const modelMinCoords = [Infinity, Infinity, Infinity]
   const modelMaxCoords = [-Infinity, -Infinity, -Infinity]
-  models[index]['minecraft:geometry'][0].bones.forEach(bone => {
+
+  const modelGeometry = models[index]['minecraft:geometry'][0]
+  modelGeometry.bones.forEach(bone => {
     if (!bone.cubes) return
     bone.cubes.forEach(cube => {
       for (let i = 0; i < 3; i++) {
@@ -90,24 +110,24 @@ function Model() {
     Math.max(...modelMaxCoords, ...modelMinCoords.map(coord => Math.abs(coord)))
 
   return (
-    <div className=' h-full w-full border border-white'>
-      <Canvas
-        frameloop='demand'
-        onClick={() => {
-          setToggled(!toggled)
-          if (rotateIndex) setIndex((index + 1) % models.length)
-        }}
-        {...bind()}
-        className=' touch-none'
-      >
-        <ambientLight intensity={5} />
-        <pointLight position={[10, 10, 10]} />
+    <div className='h-full w-full border border-white'>
+      <Canvas frameloop='demand' {...bind()} className=' touch-none'>
+        {/* <ambientLight intensity={3} /> */}
+        {/* <pointLight position={[10, 10, 10]} /> */}
         <group
           rotation={rotation}
           position={[0, 0, cameraDistance]}
           renderOrder={10}
         >
           <axesHelper args={[500]} visible={false} />
+          <gridHelper
+            args={[256, 32]}
+            position={[
+              -(modelMaxCoords[0] + modelMinCoords[0]) / 2,
+              -(modelMaxCoords[1] + modelMinCoords[1]) / 2,
+              (modelMaxCoords[2] + modelMinCoords[2]) / 2,
+            ]}
+          />
         </group>
         <group rotation={rotation} position={[0, 0, cameraDistance]}>
           <group
@@ -134,27 +154,117 @@ function Model() {
               }
               visible={false}
             />
-            <MinecraftModel
-              model={models[index]}
-              texture={textures[index]}
-              scale={1}
-            />
+            {canvasTextureRef.current && (
+              <MinecraftModel
+                model={models[index]}
+                texture={textures[index]}
+                canvasTexture={canvasTextureRef.current}
+                scale={1}
+              />
+            )}
           </group>
         </group>
+        {canvasPainterRef.current && canvasTextureRef.current ? (
+          <Painter
+            canvas={canvasPainterRef.current}
+            texture={canvasTextureRef.current}
+          />
+        ) : null}
       </Canvas>
+      <div className='pointer-events-none absolute left-4 top-4 origin-top-left scale-[8] bg-white/25'>
+        <img
+          className='painter'
+          src={images[index]}
+          width={modelGeometry.description.texture_width}
+          height={modelGeometry.description.texture_height}
+        />
+        <canvas
+          ref={canvasPainterRef}
+          className='painter absolute left-0 top-0'
+          width={modelGeometry.description.texture_width}
+          height={modelGeometry.description.texture_height}
+        />
+      </div>
+      <button
+        className='absolute right-4 top-4 rounded-md bg-white p-2'
+        onClick={() => {
+          setToggled(!toggled)
+          if (rotateIndex) setIndex((index + 1) % models.length)
+        }}
+      >
+        Next Model
+      </button>
     </div>
   )
 }
 
+type PainterProps = {
+  canvas: HTMLCanvasElement
+  texture: THREE.CanvasTexture
+}
+
+const Painter = memo(function Painter({ canvas, texture }: PainterProps) {
+  const { scene, camera, invalidate } = useThree()
+  const [x, setX] = useState<number | null>(null)
+  const [y, setY] = useState<number | null>(null)
+  const context = canvas.getContext('2d')!
+
+  useEffect(() => {
+    function onPointerMove(event: PointerEvent) {
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+      raycaster.setFromCamera(pointer, camera)
+
+      const objects: THREE.Object3D[] = []
+      scene.traverse(object => {
+        if (object.userData.type === 'cube') objects.push(object)
+      })
+
+      const intersects = raycaster.intersectObjects(objects, false)
+
+      if (intersects.length && intersects[0].uv) {
+        const { uv } = intersects[0]
+        setX(Math.floor(uv.x * canvas.width))
+        setY(canvas.height - Math.ceil(uv.y * canvas.height))
+      } else {
+        setX(null)
+        setY(null)
+      }
+    }
+
+    window.addEventListener('pointermove', onPointerMove)
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+    }
+  }, [])
+
+  useEffect(() => {
+    context.clearRect(0, 0, canvas.width, canvas.height)
+
+    if (x !== null && y !== null) {
+      context.fillStyle = 'red'
+      context.fillRect(x, y, 1, 1)
+    }
+
+    texture.needsUpdate = true
+    invalidate()
+  }, [x, y])
+
+  return null
+})
+
 type MinecraftModelProps = {
   model: Minecraft.Model
   texture: THREE.Texture
+  canvasTexture: THREE.CanvasTexture
   scale: number
 }
 
 const MinecraftModel = memo(function MinecraftModel({
   model,
   texture,
+  canvasTexture,
 }: MinecraftModelProps) {
   const [minecraftGeometry] = model['minecraft:geometry']
 
@@ -193,6 +303,7 @@ const MinecraftModel = memo(function MinecraftModel({
         minecraftGeometry={minecraftGeometry}
         texture={texture}
         order={index}
+        canvasTexture={canvasTexture}
       />
     )
   })
@@ -202,6 +313,7 @@ type GroupProps = {
   group: Minecraft.Group
   minecraftGeometry: Minecraft.Geometry
   texture: THREE.Texture
+  canvasTexture: THREE.CanvasTexture
   order: number
 }
 
@@ -210,6 +322,7 @@ const Group = memo(function Group({
   minecraftGeometry,
   texture,
   order,
+  canvasTexture,
 }: GroupProps) {
   const pivotX = group.pivot[0]
   const pivotY = group.pivot[1]
@@ -243,6 +356,7 @@ const Group = memo(function Group({
             }}
             minecraftGeometry={minecraftGeometry}
             texture={texture}
+            canvasTexture={canvasTexture}
             order={index}
           />
         ))}
@@ -257,6 +371,7 @@ const Group = memo(function Group({
               group={group}
               minecraftGeometry={minecraftGeometry}
               texture={texture}
+              canvasTexture={canvasTexture}
             />
           ))}
       </group>
@@ -269,6 +384,7 @@ type CubeProps = {
   group: Minecraft.Group
   minecraftGeometry: Minecraft.Geometry
   texture: THREE.Texture
+  canvasTexture: THREE.CanvasTexture
 }
 
 const Cube = memo(function Cube({
@@ -276,6 +392,7 @@ const Cube = memo(function Cube({
   minecraftGeometry,
   group,
   texture,
+  canvasTexture,
 }: CubeProps) {
   const { texture_width, texture_height, identifier } =
     minecraftGeometry.description
@@ -286,6 +403,15 @@ const Cube = memo(function Cube({
     cube.inflate ? width + cube.inflate * 2 : width,
     cube.inflate ? height + cube.inflate * 2 : height,
     cube.inflate ? depth + cube.inflate * 2 : depth,
+  )
+
+  const boundingGeometry = new THREE.BoxGeometry(
+    cube.inflate ? width + cube.inflate * 2 : width,
+    cube.inflate ? height + cube.inflate * 2 : height,
+    cube.inflate ? depth + cube.inflate * 2 : depth,
+    width,
+    height,
+    depth,
   )
 
   const u = cube.uv[0]
@@ -351,27 +477,36 @@ const Cube = memo(function Cube({
   let name = group.name
   if (!!cube.inflate) name = `${name} Layer`
 
+  const position: [number, number, number] = [
+    cube.origin[0] + cube.size[0] / 2,
+    cube.origin[1] + cube.size[1] / 2,
+    (cube.origin[2] + cube.size[2] / 2) * -1,
+  ]
+
   return (
-    <mesh
-      name={name}
-      position={[
-        cube.origin[0] + cube.size[0] / 2,
-        cube.origin[1] + cube.size[1] / 2,
-        (cube.origin[2] + cube.size[2] / 2) * -1,
-      ]}
-      geometry={geometry}
-    >
-      <meshStandardMaterial
-        map={texture}
-        transparent={!identifier.includes('player') || !!cube.inflate}
-        alphaTest={0.000000000000000000001}
-        side={
-          !identifier.includes('player') || !!cube.inflate
-            ? THREE.DoubleSide
-            : THREE.FrontSide
-        }
-      />
-    </mesh>
+    <group position={position}>
+      <mesh userData={{ type: 'cube' }} name={name} geometry={geometry}>
+        <meshBasicMaterial
+          map={texture}
+          transparent={!identifier.includes('player') || !!cube.inflate}
+          alphaTest={0.000000000000000000001}
+          side={
+            !identifier.includes('player') || !!cube.inflate
+              ? THREE.DoubleSide
+              : THREE.FrontSide
+          }
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh geometry={geometry}>
+        <meshBasicMaterial
+          map={canvasTexture}
+          transparent
+          side={THREE.DoubleSide}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
   )
 })
 
