@@ -40,7 +40,7 @@ namespace Minecraft {
 
   type BoneMap = Map<string, Bone>
 
-  type Group = Bone & {
-    children: Group[]
+  type BoneGroup = Bone & {
+    children: BoneGroup[]
   }
 }
