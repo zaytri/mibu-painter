@@ -6,5 +6,4 @@ export default {
   jsxSingleQuote: true,
   trailingComma: 'all',
   tailwindFunctions: ['clsx'],
-  organizeImportsSkipDestructiveCodeActions: true,
 }

@@ -12,9 +12,9 @@
 }
 
 .checkerboard {
-  --color1: theme(colors.stone[900]);
-  --color2: theme(colors.stone[950]);
-  --size: 50px;
+  --color1: theme(colors.neutral[900]);
+  --color2: theme(colors.neutral[800]);
+  --size: 100px;
   background-image: conic-gradient(
     var(--color1) 90deg,
     var(--color2) 90deg 180deg,
@@ -25,4 +25,8 @@
   background-repeat: repeat;
   background-size: var(--size) var(--size);
   background-position: top left;
+}
+
+.resizable {
+  flex: var(--customFlex);
 }

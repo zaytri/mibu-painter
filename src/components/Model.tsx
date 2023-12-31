@@ -1,20 +1,23 @@
 import BoneGroupProvider from '@/contexts/bone-group/BoneGroupProvider'
+import useBrush from '@/contexts/brush/useBrush'
 import { useModel } from '@/contexts/model/useModel'
 import useRaycaster from '@/hooks/useRaycaster'
+import { OrbitControls } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
-import { useEffect } from 'react'
-import { Vector3 } from 'three'
+import { useEffect, useRef } from 'react'
+import { type OrbitControls as OrbitControlsType } from 'three-stdlib'
 import Bone from './Bone'
 
-const vectorX = new Vector3(1, 0, 0)
-const vectorY = new Vector3(0, 1, 0)
-const vectorZ = new Vector3(0, 0, 1)
-const origin = new Vector3(0, 0, 0)
+type ModelProps = {
+  rotation: Minecraft.XYZ
+}
 
-export default function Model() {
+export default function Model({ rotation }: ModelProps) {
   useRaycaster()
   const { model } = useModel()
-  const { camera } = useThree()
+  const { camera, invalidate } = useThree()
+  const { painting } = useBrush()
+  const controlsRef = useRef<OrbitControlsType>(null)
 
   const modelMinCoords = [Infinity, Infinity, Infinity]
   const modelMaxCoords = [-Infinity, -Infinity, -Infinity]
@@ -36,14 +39,18 @@ export default function Model() {
   })
 
   useEffect(() => {
-    const cameraDistance =
-      1 *
-      Math.max(
-        ...modelMaxCoords,
-        ...modelMinCoords.map(coord => Math.abs(coord)),
-      )
-    camera.position.setZ(cameraDistance)
-  }, [model])
+    const controls = controlsRef.current
+    if (!controls) return
+    const cameraZ = Math.max(
+      ...modelMaxCoords,
+      ...modelMinCoords.map(coord => Math.abs(coord)),
+    )
+    const cameraY = modelMaxCoords[1] / 2
+    camera.position.set(0, cameraY, cameraZ)
+    controls.target.set(0, cameraY, 0)
+    controls.update()
+    invalidate()
+  }, [model, controlsRef.current])
 
   const boneGroups: Minecraft.BoneGroup[] = []
   model.bones.forEach(bone => {
@@ -67,34 +74,34 @@ export default function Model() {
     }
   })
 
+  const pivotX = (modelMaxCoords[0] + modelMinCoords[0]) / 2
+  const pivotY = (modelMaxCoords[1] + modelMinCoords[1]) / 2
+  const pivotZ = -(modelMaxCoords[2] + modelMinCoords[2]) / 2
+
   return (
-    <group
-      name='model'
-      position={[
-        -(modelMaxCoords[0] + modelMinCoords[0]) / 2,
-        -(modelMaxCoords[1] + modelMinCoords[1]) / 2,
-        (modelMaxCoords[2] + modelMinCoords[2]) / 2,
-      ]}
-    >
-      {boneGroups.map(boneGroup => {
-        return (
-          <BoneGroupProvider key={boneGroup.name} group={boneGroup}>
-            <Bone />
-          </BoneGroupProvider>
-        )
-      })}
-      <gridHelper args={[256, 32]} />
-      <arrowHelper
-        args={[vectorX, origin, modelMaxCoords[0] + 5, 'red', 2, 1]}
-        position={[0, 0.01, 0]}
+    <>
+      <OrbitControls
+        enableDamping={false}
+        enableRotate={false}
+        enabled={!painting}
+        ref={controlsRef}
+        position={[0, 0, 100]}
       />
-      <arrowHelper
-        args={[vectorY, origin, modelMaxCoords[1] + 5, 'green', 2, 1]}
-      />
-      <arrowHelper
-        args={[vectorZ, origin, modelMaxCoords[2] + 5, 'blue', 2, 1]}
-        position={[0, 0.01, 0]}
-      />
-    </group>
+      <group
+        rotation={rotation}
+        name='model pivot'
+        position={[pivotX, pivotY, pivotZ]}
+      >
+        <group name='model' position={[-pivotX, -pivotY, -pivotZ]}>
+          {boneGroups.map(boneGroup => {
+            return (
+              <BoneGroupProvider key={boneGroup.name} group={boneGroup}>
+                <Bone />
+              </BoneGroupProvider>
+            )
+          })}
+        </group>
+      </group>
+    </>
   )
 }

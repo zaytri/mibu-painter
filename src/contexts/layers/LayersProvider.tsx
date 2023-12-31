@@ -1,5 +1,5 @@
 import { texture, textureCanvas } from '@/helpers/texture'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useModel } from '../model/useModel'
 import { LayersContext } from './useLayers'
 
@@ -10,6 +10,20 @@ export default function LayersProvider({ children }: React.PropsWithChildren) {
   const [canvasLayers, setCanvasLayers] = useState<OffscreenCanvas[]>([
     new OffscreenCanvas(1, 1),
   ])
+  const layersRef = useRef(canvasLayers)
+  layersRef.current = canvasLayers
+
+  const paint = useCallback(() => {
+    const merged = textureCanvas.getContext('2d')!
+    merged.clearRect(0, 0, textureCanvas.width, textureCanvas.height)
+
+    layersRef.current.forEach(layer => {
+      merged.drawImage(layer, 0, 0)
+    })
+
+    dispatchEvent(PaintEvent)
+    texture.needsUpdate = true
+  }, [])
 
   useEffect(() => {
     const { texture_width, texture_height } = model.description
@@ -24,30 +38,19 @@ export default function LayersProvider({ children }: React.PropsWithChildren) {
 
     const baseLayer = newCanvasLayers[0].getContext('2d')!
     const image = new Image(texture_width, texture_height)
-    image.src = '/textures/player/alex.png'
+    image.src = '/textures/player_slim/cleo.png'
     image.onload = () => {
       baseLayer.drawImage(image, 0, 0)
-      paint()
+      setCanvasLayers(newCanvasLayers)
     }
-    image.onerror = console.error
-
-    setCanvasLayers(newCanvasLayers)
+    image.onerror = error => {
+      console.error(error)
+      setCanvasLayers(newCanvasLayers)
+    }
   }, [model])
 
   useEffect(() => {
     paint()
-  }, [canvasLayers])
-
-  const paint = useCallback(() => {
-    const merged = textureCanvas.getContext('2d')!
-    merged.clearRect(0, 0, textureCanvas.width, textureCanvas.height)
-
-    canvasLayers.forEach(layer => {
-      merged.drawImage(layer, 0, 0)
-    })
-
-    dispatchEvent(PaintEvent)
-    texture.needsUpdate = true
   }, [canvasLayers])
 
   const layers = canvasLayers.map(layer => layer.getContext('2d')!)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLayers } from '../layers/useLayers'
 import { BrushContext } from './useBrush'
 
@@ -9,7 +9,8 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
   const [modelX, setModelX] = useState<number | null>(null)
   const [modelY, setModelY] = useState<number | null>(null)
   const [painting, setPainting] = useState(false)
-  const brushXY: Minecraft.UV | null =
+  const brushXYRef = useRef<Minecraft.UV | null>(null)
+  brushXYRef.current =
     previewX !== null && previewY !== null
       ? [previewX, previewY]
       : modelX !== null && modelY !== null
@@ -19,19 +20,20 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
   const drawBrush = useCallback(
     (layer: OffscreenCanvasRenderingContext2D) => {
       layer.fillStyle = 'red'
-      if (brushXY) layer.fillRect(brushXY[0], brushXY[1], 1, 1)
+      if (brushXYRef.current)
+        layer.fillRect(brushXYRef.current[0], brushXYRef.current[1], 1, 1)
       paint()
     },
-    [brushXY],
+    [brushXYRef.current],
   )
 
   const overCube = useCallback(
     (cube: Minecraft.Cube) => {
-      if (!brushXY) return false
+      if (!brushXYRef.current) return false
 
       const [width, height, depth] = cube.size
       const [u, v] = cube.uv
-      const [x, y] = brushXY
+      const [x, y] = brushXYRef.current
 
       const boundedX1 = x >= u + depth && x < u + depth + width * 2
       const boundedY1 = y >= v && y < v + depth
@@ -40,7 +42,7 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
 
       return (boundedX1 && boundedY1) || (boundedX2 && boundedY2)
     },
-    [brushXY],
+    [brushXYRef.current],
   )
 
   const setPaintingCallback = useCallback(
@@ -86,7 +88,7 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
   return (
     <BrushContext.Provider
       value={{
-        brushXY,
+        brushXY: brushXYRef.current,
         draw,
         setModelXY,
         setPreviewXY,
