@@ -8,28 +8,28 @@ const raycaster = new Raycaster()
 const pointer = new Vector2()
 
 export default function useRaycaster() {
-  const { scene, camera, size } = useThree()
+  const { scene, camera, size, gl } = useThree()
   const { width, height } = useLayers()
-  const { setModelXY, clearModelXY } = useBrush()
+  const { setBrush, clearBrush } = useBrush()
 
   useEffect(() => {
     function raycast(event: PointerEvent) {
-      pointer.x = (event.clientX / size.width) * 2 - 1
-      pointer.y = -(event.clientY / size.height) * 2 + 1
+      pointer.x = ((event.clientX - size.left) / size.width) * 2 - 1
+      pointer.y = -((event.clientY - size.top) / size.height) * 2 + 1
 
       raycaster.setFromCamera(pointer, camera)
       const uv = uvIntersect(scene)
       if (uv) {
-        setModelXY(Math.floor(uv.x * width), height - Math.ceil(uv.y * height))
+        setBrush(Math.floor(uv.x * width), height - Math.ceil(uv.y * height))
       } else {
-        clearModelXY()
+        clearBrush()
       }
     }
 
-    addEventListener('pointermove', raycast)
+    gl.domElement.addEventListener('pointermove', raycast)
 
     return () => {
-      removeEventListener('pointermove', raycast)
+      gl.domElement.removeEventListener('pointermove', raycast)
     }
   })
 }

@@ -86,6 +86,7 @@ export default function Model({ rotation }: ModelProps) {
         enabled={!painting}
         ref={controlsRef}
         position={[0, 0, 100]}
+        zoomToCursor
       />
       <group
         rotation={rotation}

@@ -17,7 +17,10 @@ export default function LayersProvider({ children }: React.PropsWithChildren) {
     const merged = textureCanvas.getContext('2d')!
     merged.clearRect(0, 0, textureCanvas.width, textureCanvas.height)
 
-    layersRef.current.forEach(layer => {
+    layersRef.current.forEach((layer, index) => {
+      merged.globalCompositeOperation =
+        index !== 0 ? 'color-burn' : 'source-over'
+
       merged.drawImage(layer, 0, 0)
     })
 

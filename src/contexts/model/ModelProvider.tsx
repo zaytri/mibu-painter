@@ -1,10 +1,14 @@
 import axios from 'axios'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ModelContext, initialState } from './useModel'
 
 export default function ModelProvider({ children }: React.PropsWithChildren) {
   const [model, setModel] = useState(initialState.model)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // loadModel('camel')
+  }, [])
 
   const readPublicModel = useCallback(
     async (modelName: string): Promise<Minecraft.Model> => {

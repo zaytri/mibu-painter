@@ -5,11 +5,9 @@ export default function useBrush() {
 }
 
 export const initialState: BrushState = {
-  brushXY: null,
-  setPreviewXY() {},
-  setModelXY() {},
-  clearPreviewXY() {},
-  clearModelXY() {},
+  brush: null,
+  setBrush() {},
+  clearBrush() {},
   draw() {},
   setPainting() {},
   painting: false,
@@ -20,11 +18,9 @@ export const initialState: BrushState = {
 export const BrushContext = createContext<BrushState>(initialState)
 
 type BrushState = {
-  brushXY: Minecraft.UV | null
-  setPreviewXY: (x: number, y: number) => void
-  setModelXY: (x: number, y: number) => void
-  clearPreviewXY: () => void
-  clearModelXY: () => void
+  brush: Minecraft.UV | null
+  setBrush: (x: number, y: number) => void
+  clearBrush: () => void
   draw: () => void
   setPainting: (painting: boolean) => void
   painting: boolean

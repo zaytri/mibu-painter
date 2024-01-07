@@ -55,13 +55,13 @@ export default function App() {
         direction === 'horizontal' && 'flex-row',
         direction === 'vertical' && 'flex-col',
       )}
-      onClick={draw}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerMove={onPointerMove}
+      // onClick={draw}
+      // onPointerDown={onPointerDown}
+      // onPointerUp={onPointerUp}
+      // onPointerMove={onPointerMove}
     >
       <div
-        className='resizable relative min-h-48 min-w-48'
+        className='resizable relative min-h-48 min-w-48 cursor-crosshair'
         style={{ '--customFlex': flex } as React.CSSProperties}
       >
         <Scene />
@@ -90,7 +90,7 @@ export default function App() {
         )}
         style={{ '--customFlex': 1 - flex } as React.CSSProperties}
       >
-        <div className='min-h-48 min-w-48 flex-1'>
+        <div className='min-h-48 min-w-48 flex-1 cursor-crosshair'>
           <Preview />
         </div>
         <div className='hidden min-h-48 min-w-48 flex-1 bg-rose-300'></div>

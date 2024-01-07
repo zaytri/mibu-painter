@@ -1,166 +1,124 @@
 import useBrush from '@/contexts/brush/useBrush'
+import { useLayers } from '@/contexts/layers/useLayers'
 import { useModel } from '@/contexts/model/useModel'
-import { textureCanvas } from '@/helpers/texture'
-import useResizeObserver from '@react-hook/resize-observer'
-import { useCallback, useEffect, useRef } from 'react'
+import { createGridPoints, createOutlinePoints } from '@/helpers/planeMath'
+import { texture } from '@/helpers/texture'
+import useRaycaster from '@/hooks/useRaycaster'
+import {
+  Line,
+  OrbitControls,
+  OrthographicCamera,
+  Plane,
+} from '@react-three/drei'
+import { Canvas, useThree } from '@react-three/fiber'
+import { useEffect, useRef } from 'react'
+import { Vector3 } from 'three'
+import { type OrbitControls as OrbitControlsType } from 'three-stdlib'
 
 export default function Preview() {
-  const { setPreviewXY, clearPreviewXY, overCube } = useBrush()
-  const { model } = useModel()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  const paint = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const devicePixelRatio = window.devicePixelRatio || 1
-    const { width, height } = canvas.getBoundingClientRect()
-    canvas.width = width * devicePixelRatio
-    canvas.height = height * devicePixelRatio
-
-    const layer = canvas.getContext('2d')!
-    layer.scale(devicePixelRatio, devicePixelRatio)
-
-    layer.clearRect(0, 0, width, height)
-    layer.imageSmoothingEnabled = false
-    const ratio = Math.min(
-      width / textureCanvas.width,
-      height / textureCanvas.height,
-    )
-
-    const scaledWidth = textureCanvas.width * ratio
-    const scaledHeight = textureCanvas.height * ratio
-
-    layer.translate((width - scaledWidth) / 2, (height - scaledHeight) / 2)
-
-    layer.fillStyle = 'rgba(100%, 100%, 100%, 10%)'
-    layer.fillRect(0, 0, scaledWidth, scaledHeight)
-
-    layer.drawImage(textureCanvas, 0, 0, scaledWidth, scaledHeight)
-
-    layer.beginPath()
-    layer.lineWidth = 1
-    layer.strokeStyle = 'rgba(0, 0, 0, 25%)'
-
-    const offsetX = scaledWidth / textureCanvas.width
-    const offsetY = scaledHeight / textureCanvas.height
-
-    for (let i = 0; i <= textureCanvas.width; i++) {
-      const x = offsetX * i
-      layer.moveTo(x, 0)
-      layer.lineTo(x, scaledHeight)
-    }
-
-    for (let i = 0; i <= textureCanvas.height; i++) {
-      const y = offsetY * i
-      layer.moveTo(0, y)
-      layer.lineTo(scaledWidth, y)
-    }
-
-    layer.stroke()
-
-    layer.beginPath()
-    layer.lineWidth = 2
-    layer.strokeStyle = 'black'
-
-    function drawOutline(cube: Minecraft.Cube) {
-      const [width, height, depth] = cube.size
-      const [x, y] = cube.uv
-
-      const points: Minecraft.UV[] = [
-        [x + width * 2 + depth * 2, y + depth + height, -1, -1],
-        [x + width * 2 + depth * 2, y + depth, -1, 1],
-        [x + width * 2 + depth, y + depth, -1, 1],
-        [x + width * 2 + depth, y, -1, 1],
-        [x + depth, y, 1, 1],
-        [x + depth, y + depth, 1, 1],
-        [x, y + depth, 1, 1],
-        [x, y + depth + height, 1, -1],
-      ].map(point => {
-        const [x, y, pixelOffsetX, pixelOffsetY] = point
-        return [x * offsetX + pixelOffsetX, y * offsetY + pixelOffsetY]
-      })
-
-      const startPoint = points.pop()!
-      layer.moveTo(...startPoint)
-      points.forEach(point => {
-        layer.lineTo(...point)
-      })
-
-      layer.closePath()
-    }
-
-    let hoveredCube: Minecraft.Cube | null = null
-
-    model.bones.forEach(bone => {
-      if (!bone.cubes) return
-      bone.cubes.forEach(cube => {
-        if (overCube(cube)) hoveredCube = cube
-        drawOutline(cube)
-      })
-    })
-
-    layer.stroke()
-
-    if (hoveredCube) {
-      layer.beginPath()
-      layer.lineWidth = 2
-      layer.strokeStyle = 'white'
-      drawOutline(hoveredCube)
-      layer.stroke()
-    }
-  }, [overCube])
-
-  useEffect(() => {
-    addEventListener('paint', paint)
-    addEventListener('resize', paint)
-    return () => {
-      removeEventListener('paint', paint)
-      removeEventListener('resize', paint)
-    }
-  }, [])
-
-  useResizeObserver(canvasRef, paint)
-
-  function onPointerMove(event: React.PointerEvent) {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const { left, top, width, height } = canvas.getBoundingClientRect()
-    const ratio = Math.min(
-      width / textureCanvas.width,
-      height / textureCanvas.height,
-    )
-
-    const scaledWidth = textureCanvas.width * ratio
-    const scaledHeight = textureCanvas.height * ratio
-
-    const x = Math.floor(
-      (event.clientX - left - (width - scaledWidth) / 2) / ratio,
-    )
-    const y = Math.floor(
-      (event.clientY - top - (height - scaledHeight) / 2) / ratio,
-    )
-
-    if (x < textureCanvas.width && y < textureCanvas.height) {
-      setPreviewXY(x, y)
-    } else {
-      // out of bounds
-      clearPreviewXY()
-    }
-  }
-
-  function onPointerOut() {
-    clearPreviewXY()
-  }
+  const dpr = (window.devicePixelRatio || 1) * 3
 
   return (
-    <canvas
-      id='preview'
-      ref={canvasRef}
-      className='h-full w-full'
-      onPointerMove={onPointerMove}
-      onPointerOut={onPointerOut}
-    />
+    <Canvas flat frameloop='demand' dpr={dpr}>
+      <PreviewScene />
+    </Canvas>
+  )
+}
+
+const minPan = new Vector3()
+const maxPan = new Vector3()
+
+function PreviewScene() {
+  useRaycaster()
+  const { size, camera } = useThree()
+  const { width, height } = useLayers()
+  const { model } = useModel()
+  const { overCube } = useBrush()
+  const minZoom = Math.floor(Math.min(size.width, size.height))
+  const maxZoom = (minZoom * Math.max(width, height)) / 8
+  const controlsRef = useRef<OrbitControlsType>(null)
+  const gridPoints = createGridPoints(width, height)
+  const outlinePoints: Minecraft.XYZ[] = []
+  const selectedOutlinePoints: Minecraft.XYZ[] = []
+  model.bones.forEach(bone => {
+    if (!bone.cubes) return
+    bone.cubes.forEach(cube => {
+      const points = createOutlinePoints(cube, width, height)
+      if (overCube(cube)) selectedOutlinePoints.push(...points)
+      outlinePoints.push(...points)
+    })
+  })
+
+  useEffect(() => {
+    const controls = controlsRef.current
+    if (!controls) return
+
+    function onChange() {
+      const controls = controlsRef.current
+      if (!controls) return
+      const { target } = controls
+
+      const [panLimitX, panLimitY] = [size.width, size.height].map(bound => {
+        return Math.abs((1 - bound / camera.zoom) * 0.5)
+      })
+
+      minPan.set(-panLimitX, -panLimitY, 0)
+      maxPan.set(panLimitX, panLimitY, 0)
+
+      target.clamp(minPan, maxPan)
+      camera.position.copy(target)
+    }
+
+    onChange()
+
+    controls.addEventListener('change', onChange)
+
+    return () => {
+      controls.removeEventListener('change', onChange)
+    }
+  }, [controlsRef.current, size])
+
+  return (
+    <group>
+      <OrbitControls
+        enableDamping={false}
+        enableRotate={false}
+        zoomToCursor
+        minZoom={minZoom}
+        maxZoom={maxZoom}
+        ref={controlsRef}
+      />
+      <OrthographicCamera
+        makeDefault
+        args={[-1, 1, -1, 1, -1, 1]}
+        zoom={minZoom}
+      />
+      <group>
+        <Plane>
+          <meshBasicMaterial color='white' transparent opacity={0.1} />
+        </Plane>
+        <Plane userData={{ type: 'cube' }}>
+          <meshBasicMaterial map={texture} transparent alphaTest={0.0000001} />
+        </Plane>
+        <group rotation={[Math.PI, 0, 0]}>
+          <Line
+            points={gridPoints}
+            segments
+            transparent
+            lineWidth={1}
+            opacity={0.2}
+          />
+          <Line points={outlinePoints} segments transparent lineWidth={5} />
+          <Line
+            points={selectedOutlinePoints}
+            color='white'
+            segments
+            transparent
+            renderOrder={2}
+            lineWidth={5}
+          />
+        </group>
+      </group>
+    </group>
   )
 }

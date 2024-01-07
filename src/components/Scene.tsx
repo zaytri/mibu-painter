@@ -29,16 +29,18 @@ export default function Scene() {
     { pointer: { lock: true } },
   )
 
+  const dpr = (window.devicePixelRatio || 1) * 3
+
   return (
     <>
-      <Canvas flat id='scene' frameloop='demand'>
+      <Canvas flat id='scene' frameloop='demand' dpr={dpr}>
         <Model rotation={rotation} />
       </Canvas>
       <div
         className='absolute right-4 top-4 h-32 w-32 cursor-grab border border-black bg-white/10 active:cursor-grabbing'
         {...bind()}
       >
-        <Canvas flat frameloop='demand'>
+        <Canvas flat frameloop='demand' dpr={dpr}>
           <OrthographicCamera makeDefault position={[0, 0, 200]} />
           <RotationCube rotation={rotation} />
         </Canvas>

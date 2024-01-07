@@ -20,7 +20,7 @@ const Cube = memo(function Cube(cube: Minecraft.Cube) {
 
   const { edgePoints, innerPoints } = createGridPoints(cube)
   const name = cube.inflate ? `${bone.name} Layer` : bone.name
-  const hoverColor = 'white'
+  const hoverColor = 'black'
 
   return (
     <group
@@ -44,14 +44,21 @@ const Cube = memo(function Cube(cube: Minecraft.Cube) {
 
         <Outlines
           visible={hover}
-          color={hoverColor}
+          color='white'
           transparent
-          opacity={0.1}
+          thickness={0.01}
+          opacity={0.2}
           renderOrder={2}
         />
-        <Outlines color='white' transparent opacity={0.05} renderOrder={3} />
+        <Outlines
+          color='white'
+          transparent
+          opacity={0.2}
+          renderOrder={3}
+          thickness={0.01}
+        />
       </mesh>
-      <group name='hover grid' scale={1.01} renderOrder={5}>
+      <group name='hover grid' scale={1.001} renderOrder={5}>
         <Line
           visible={hover}
           points={innerPoints}
