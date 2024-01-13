@@ -2,9 +2,9 @@ import BoneGroupProvider from '@/contexts/bone-group/BoneGroupProvider'
 import useBrush from '@/contexts/brush/useBrush'
 import { useModel } from '@/contexts/model/useModel'
 import useRaycaster from '@/hooks/useRaycaster'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type OrbitControls as OrbitControlsType } from 'three-stdlib'
 import Bone from './Bone'
 
@@ -15,7 +15,8 @@ type ModelProps = {
 export default function Model({ rotation }: ModelProps) {
   useRaycaster()
   const { model } = useModel()
-  const { camera, invalidate } = useThree()
+  const [defaultZoom, setDefaultZoom] = useState(0)
+  const { camera, invalidate, size } = useThree()
   const { painting } = useBrush()
   const controlsRef = useRef<OrbitControlsType>(null)
 
@@ -41,12 +42,15 @@ export default function Model({ rotation }: ModelProps) {
   useEffect(() => {
     const controls = controlsRef.current
     if (!controls) return
-    const cameraZ = Math.max(
-      ...modelMaxCoords,
-      ...modelMinCoords.map(coord => Math.abs(coord)),
-    )
+    const cameraZ =
+      Math.max(
+        ...modelMaxCoords.map(coord => Math.abs(coord)),
+        ...modelMinCoords.map(coord => Math.abs(coord)),
+      ) * 2
+    const canvasMinDimension = Math.floor(Math.min(size.width, size.height))
     const cameraY = modelMaxCoords[1] / 2
     camera.position.set(0, cameraY, cameraZ)
+    setDefaultZoom(canvasMinDimension / cameraZ)
     controls.target.set(0, cameraY, 0)
     controls.update()
     invalidate()
@@ -88,6 +92,7 @@ export default function Model({ rotation }: ModelProps) {
         position={[0, 0, 100]}
         zoomToCursor
       />
+      <OrthographicCamera makeDefault zoom={defaultZoom} />
       <group
         rotation={rotation}
         name='model pivot'

@@ -27,16 +27,27 @@ export function createOutlinePoints(
 
   const outline: Minecraft.UV[] = []
 
-  const points: Minecraft.UV[] = [
-    [x + width * 2 + depth * 2, y + depth + height],
-    [x + width * 2 + depth * 2, y + depth],
-    [x + width * 2 + depth, y + depth],
-    [x + width * 2 + depth, y],
-    [x + depth, y],
-    [x + depth, y + depth],
-    [x, y + depth],
-    [x, y + depth + height],
-  ]
+  const points: Minecraft.UV[] = []
+
+  // upper rectangle
+  if (width && depth) {
+    points.push(
+      [x + depth, y + depth], // bottom left
+      [x + depth, y], // top left
+      [x + width * 2 + depth, y], // top right
+      [x + width * 2 + depth, y + depth], // bottom right
+    )
+  }
+
+  // lower rectangle
+  if (height) {
+    points.push(
+      [x + width * 2 + depth * 2, y + depth], // top right
+      [x + width * 2 + depth * 2, y + depth + height], // bottom right
+      [x, y + depth + height], // bottom left
+      [x, y + depth], // top left
+    )
+  }
 
   points.forEach((point, index) => {
     const point2 = points[(index + 1) % points.length]
