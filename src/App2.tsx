@@ -1,9 +1,4 @@
-import axolotlModel from '@/models/axolotl.geo.json'
 import camelModel from '@/models/camel.geo.json'
-import dragonModel from '@/models/ender_dragon.geo.json'
-import guardianModel from '@/models/guardian.geo.json'
-import playerModel from '@/models/player.geo.json'
-import playerSlimModel from '@/models/player_slim.geo.json'
 import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { useDrag } from '@use-gesture/react'
 import { Suspense, memo, useEffect, useRef, useState } from 'react'
@@ -438,11 +433,11 @@ const Cube = memo(function Cube({
     deltaX: number,
     deltaY: number,
     options?: { flipX?: boolean; flipY?: boolean },
-  ): Minecraft.UV[] {
-    const topLeft: Minecraft.UV = [originX, originY + deltaY]
-    const topRight: Minecraft.UV = [originX + deltaX, originY + deltaY]
-    const bottomLeft: Minecraft.UV = [originX, originY]
-    const bottomRight: Minecraft.UV = [originX + deltaX, originY]
+  ): Mibu.Vector2[] {
+    const topLeft: Mibu.Vector2 = [originX, originY + deltaY]
+    const topRight: Mibu.Vector2 = [originX + deltaX, originY + deltaY]
+    const bottomLeft: Mibu.Vector2 = [originX, originY]
+    const bottomRight: Mibu.Vector2 = [originX + deltaX, originY]
 
     let face = [topLeft, topRight, bottomLeft, bottomRight]
 
@@ -473,7 +468,7 @@ const Cube = memo(function Cube({
     }),
   }
 
-  const faceArray: Minecraft.UV[][] = [faces.left, faces.right]
+  const faceArray: Mibu.Vector2[][] = [faces.left, faces.right]
   if (cube.mirror) faceArray.reverse()
   faceArray.push(faces.top, faces.bottom, faces.front, faces.back)
 

@@ -7,7 +7,7 @@ import Model from './Model'
 import RotationCube from './RotationCube'
 
 export default function Scene() {
-  const [rotation, setRotation] = useState<Minecraft.XYZ>([
+  const [rotation, setRotation] = useState<Mibu.Vector3>([
     Math.PI / 8,
     -Math.PI / 4,
     0,

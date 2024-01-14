@@ -7,7 +7,7 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
   const [x, setX] = useState<number | null>(null)
   const [y, setY] = useState<number | null>(null)
   const [painting, setPainting] = useState(false)
-  const brushRef = useRef<Minecraft.UV | null>(null)
+  const brushRef = useRef<Mibu.Vector2 | null>(null)
   brushRef.current = x !== null && y !== null ? [x, y] : null
 
   const drawBrush = useCallback(

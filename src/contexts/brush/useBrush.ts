@@ -18,7 +18,7 @@ export const initialState: BrushState = {
 export const BrushContext = createContext<BrushState>(initialState)
 
 type BrushState = {
-  brush: Minecraft.UV | null
+  brush: Mibu.Vector2 | null
   setBrush: (x: number, y: number) => void
   clearBrush: () => void
   draw: () => void

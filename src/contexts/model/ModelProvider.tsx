@@ -7,7 +7,7 @@ export default function ModelProvider({ children }: React.PropsWithChildren) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // loadModel('camel')
+    loadModel('player_slim')
   }, [])
 
   const readPublicModel = useCallback(

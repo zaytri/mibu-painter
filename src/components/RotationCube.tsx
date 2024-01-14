@@ -2,7 +2,7 @@ import { createGridPoints } from '@/helpers/cubeMath'
 import { Line, Plane, Text } from '@react-three/drei'
 
 type RotationCubeProps = {
-  rotation: Minecraft.XYZ
+  rotation: Mibu.Vector3
 }
 
 const size = 75

@@ -4,9 +4,6 @@ namespace Minecraft {
     'minecraft:geometry': Geometry[]
   }
 
-  type XYZ = [number, number, number]
-  type UV = [number, number]
-
   type Geometry = {
     description: {
       identifier: string

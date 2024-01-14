@@ -4,23 +4,23 @@ export function createGridPoints(cube: Minecraft.Cube) {
   const [xSegments, ySegments, zSegments] = cube.size
   const [cubeWidth, cubeHeight, cubeDepth] = cubeDimensions(cube)
 
-  const edgePoints: Minecraft.XYZ[] = []
-  const innerPoints: Minecraft.XYZ[] = []
+  const edgePoints: Mibu.Vector3[] = []
+  const innerPoints: Mibu.Vector3[] = []
 
-  function translatePoint(point: Minecraft.XYZ): Minecraft.XYZ {
+  function translatePoint(point: Mibu.Vector3): Mibu.Vector3 {
     const [x, y, z] = point
     return [x - cubeWidth / 2, y - cubeHeight / 2, z - cubeDepth / 2]
   }
 
   function addLine(
-    array: Minecraft.XYZ[],
-    point1: Minecraft.XYZ,
-    point2: Minecraft.XYZ,
+    array: Mibu.Vector3[],
+    point1: Mibu.Vector3,
+    point2: Mibu.Vector3,
   ) {
     array.push(translatePoint(point1), translatePoint(point2))
   }
 
-  function addCorner(point: Minecraft.XYZ) {
+  function addCorner(point: Mibu.Vector3) {
     const [x, y, z] = point
     addLine(edgePoints, point, [Math.abs(x - cubeWidth), y, z])
     addLine(edgePoints, point, [x, Math.abs(y - cubeHeight), z])
@@ -33,7 +33,7 @@ export function createGridPoints(cube: Minecraft.Cube) {
   addCorner([0, cubeHeight, cubeDepth])
 
   function addSquare(
-    ...points: [Minecraft.XYZ, Minecraft.XYZ, Minecraft.XYZ, Minecraft.XYZ]
+    ...points: [Mibu.Vector3, Mibu.Vector3, Mibu.Vector3, Mibu.Vector3]
   ) {
     addLine(innerPoints, points[0], points[1])
     addLine(innerPoints, points[0], points[2])
@@ -133,7 +133,7 @@ function uvFaces(
     }),
   }
 
-  const faceArray: Minecraft.UV[][] = [faces.left, faces.right]
+  const faceArray: Mibu.Vector2[][] = [faces.left, faces.right]
   if (mirror) faceArray.reverse()
   faceArray.push(faces.top, faces.bottom, faces.front, faces.back)
   return faceArray
@@ -145,11 +145,11 @@ function uvFace(
   deltaX: number,
   deltaY: number,
   options?: { flipX?: boolean; flipY?: boolean },
-): Minecraft.UV[] {
-  const topLeft: Minecraft.UV = [originX, originY + deltaY]
-  const topRight: Minecraft.UV = [originX + deltaX, originY + deltaY]
-  const bottomLeft: Minecraft.UV = [originX, originY]
-  const bottomRight: Minecraft.UV = [originX + deltaX, originY]
+): Mibu.Vector2[] {
+  const topLeft: Mibu.Vector2 = [originX, originY + deltaY]
+  const topRight: Mibu.Vector2 = [originX + deltaX, originY + deltaY]
+  const bottomLeft: Mibu.Vector2 = [originX, originY]
+  const bottomRight: Mibu.Vector2 = [originX + deltaX, originY]
 
   let face = [topLeft, topRight, bottomLeft, bottomRight]
 

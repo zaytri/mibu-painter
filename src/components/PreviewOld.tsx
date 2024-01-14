@@ -71,7 +71,7 @@ export default function Preview() {
       const [width, height, depth] = cube.size
       const [x, y] = cube.uv
 
-      const points: Minecraft.UV[] = [
+      const points: Mibu.Vector2[] = [
         [x + width * 2 + depth * 2, y + depth + height, -1, -1],
         [x + width * 2 + depth * 2, y + depth, -1, 1],
         [x + width * 2 + depth, y + depth, -1, 1],

@@ -9,7 +9,7 @@ import { type OrbitControls as OrbitControlsType } from 'three-stdlib'
 import Bone from './Bone'
 
 type ModelProps = {
-  rotation: Minecraft.XYZ
+  rotation: Mibu.Vector3
 }
 
 export default function Model({ rotation }: ModelProps) {
