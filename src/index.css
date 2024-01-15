@@ -27,6 +27,60 @@
   background-position: top left;
 }
 
+.hotcell {
+  @apply relative h-16 w-16 bg-black/70;
+  height: 64px;
+  width: 64px;
+  --borderWidth: 3px;
+  border: var(--borderWidth) solid;
+  border-top-color: #939393;
+  border-left-color: #939393;
+  border-bottom-color: #5d5d5d;
+  border-right-color: #5d5d5d;
+}
+
+.hotcell::after {
+  @apply absolute inset-0 content-[''];
+  border: var(--borderWidth) solid;
+  border-top-color: #5d5d5d;
+  border-left-color: #5d5d5d;
+  border-bottom-color: #7e7e7e;
+  border-right-color: #7e7e7e;
+  box-shadow: inset var(--borderWidth) var(--borderWidth)
+    theme(colors.black / 20%);
+}
+
+.hotcell-select {
+  @apply absolute;
+  inset: calc(var(--borderWidth) * -2);
+  z-index: -1;
+}
+
+.hotcell:hover .hotcell-select {
+  border: var(--borderWidth) solid black;
+  border-top-color: #d5e8d0;
+  border-left-color: #d5e8d0;
+  border-bottom-color: #5f6d5c;
+  border-right-color: #5f6d5c;
+  box-shadow: 0 0 0 var(--borderWidth) black;
+  z-index: 1;
+}
+
+.hotcell:hover .hotcell-select::before {
+  @apply absolute inset-0 content-[''];
+  border: var(--borderWidth) solid #a0b19c;
+}
+
+.hotcell:hover .hotcell-select::after {
+  @apply absolute content-[''];
+  inset: var(--borderWidth);
+  border: var(--borderWidth) solid;
+  border-top-color: #5f6d5c;
+  border-left-color: #5f6d5c;
+  border-bottom-color: #d5e8d0;
+  border-right-color: #d5e8d0;
+}
+
 .resizable {
   flex: var(--customFlex);
 }
