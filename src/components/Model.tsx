@@ -42,15 +42,19 @@ export default function Model({ rotation }: ModelProps) {
   useEffect(() => {
     const controls = controlsRef.current
     if (!controls) return
-    const cameraZ =
-      Math.max(
-        ...modelMaxCoords.map(coord => Math.abs(coord)),
-        ...modelMinCoords.map(coord => Math.abs(coord)),
-      ) * 2
-    const canvasMinDimension = Math.floor(Math.min(size.width, size.height))
+
     const cameraY = modelMaxCoords[1] / 2
+    const cameraZ = Math.max(
+      modelMaxCoords[0] - modelMinCoords[0],
+      modelMaxCoords[1] - modelMinCoords[1],
+      modelMaxCoords[2] - modelMinCoords[2],
+    )
+
     camera.position.set(0, cameraY, cameraZ)
-    setDefaultZoom(canvasMinDimension / cameraZ)
+
+    const canvasMinDimension = Math.floor(Math.min(size.width, size.height))
+    setDefaultZoom((canvasMinDimension * 0.9) / cameraZ)
+
     controls.target.set(0, cameraY, 0)
     controls.update()
     invalidate()
