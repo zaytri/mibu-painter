@@ -40,7 +40,7 @@ function PreviewScene() {
   const { model } = useModel()
   const { overCube } = useBrush()
   const minZoom = Math.floor(Math.min(size.width, size.height)) / 2
-  const maxZoom = (minZoom * Math.max(width, height)) / 8
+  const maxZoom = (minZoom * Math.max(width, height)) / 4
   const controlsRef = useRef<OrbitControlsType>(null)
   const gridPoints = createGridPoints(width, height)
   const outlinePoints: Mibu.Vector3[] = []
@@ -104,12 +104,27 @@ function PreviewScene() {
       <OrthographicCamera
         makeDefault
         args={[-1, 1, -1, 1, -1, 1]}
-        zoom={minZoom}
+        zoom={minZoom * 1.75}
       />
       <group>
         <Plane userData={{ type: 'cube' }} renderOrder={1}>
           <meshBasicMaterial map={texture} transparent alphaTest={0.0000001} />
         </Plane>
+        <Line
+          name='border'
+          points={[
+            [-0.5, -0.5, 0],
+            [-0.5, 0.5, 0],
+            [0.5, 0.5, 0],
+            [0.5, -0.5, 0],
+            [-0.5, -0.5, 0],
+          ]}
+          transparent
+          lineWidth={2}
+          scale={1.01}
+          renderOrder={3}
+          color={'gray'}
+        />
 
         <group rotation={[Math.PI, 0, 0]}>
           {outlinePlanes.map(plane => {
@@ -149,7 +164,7 @@ function PreviewScene() {
             segments
             transparent
             color='black'
-            lineWidth={5}
+            lineWidth={3}
             renderOrder={3}
           />
           <Line
@@ -159,15 +174,13 @@ function PreviewScene() {
             segments
             transparent
             renderOrder={4}
-            lineWidth={5}
+            lineWidth={4}
           />
           <Line
             visible={!!selectedBetweenPoints.length}
             points={selectedBetweenPoints}
             color='white'
             segments
-            // dashed
-            // dashScale={Math.max(width, height) * 4}
             transparent
             opacity={0.5}
             renderOrder={4}
