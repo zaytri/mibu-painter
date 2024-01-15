@@ -47,9 +47,15 @@ function PreviewScene() {
   const selectedOutlinePoints: Mibu.Vector3[] = []
   const selectedBetweenPoints: Mibu.Vector3[] = []
 
+  const uvDuplicates = new Set<string>()
   model.bones.forEach(bone => {
     if (!bone.cubes) return
+
     bone.cubes.forEach(cube => {
+      const key = cube.uv.join()
+      if (uvDuplicates.has(key)) return
+      uvDuplicates.add(key)
+
       const points = createOutlinePoints(cube, width, height)
       if (overCube(cube)) {
         selectedOutlinePoints.push(...points)
@@ -182,7 +188,7 @@ function PreviewScene() {
             color='white'
             segments
             transparent
-            opacity={0.5}
+            opacity={0.75}
             renderOrder={4}
             lineWidth={2}
           />
