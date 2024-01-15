@@ -4,7 +4,7 @@ import { useDrag } from '@use-gesture/react'
 import { useState } from 'react'
 import { MathUtils } from 'three'
 import Model from './Model'
-import RotationCube from './RotationCube'
+import Rotater from './Rotater'
 
 export default function Scene() {
   const [rotation, setRotation] = useState<Mibu.Vector3>([
@@ -26,7 +26,7 @@ export default function Scene() {
       newRotation[1] += dx / 40
       setRotation(newRotation)
     },
-    { pointer: { lock: true } },
+    { pointer: { lock: false } },
   )
 
   const dpr = (window.devicePixelRatio || 1) * 3
@@ -37,12 +37,12 @@ export default function Scene() {
         <Model rotation={rotation} />
       </Canvas>
       <div
-        className='absolute right-4 top-4 h-32 w-32 cursor-grab border border-black bg-white/10 active:cursor-grabbing'
+        className='absolute right-4 top-4 h-36 w-36 rounded-full border border-black bg-white/10 active:cursor-grabbing'
         {...bind()}
       >
         <Canvas flat frameloop='demand' dpr={dpr}>
           <OrthographicCamera makeDefault position={[0, 0, 200]} />
-          <RotationCube rotation={rotation} />
+          <Rotater rotation={rotation} setRotation={setRotation} />
         </Canvas>
       </div>
     </>

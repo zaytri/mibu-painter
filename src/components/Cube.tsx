@@ -72,7 +72,7 @@ const Cube = memo(function Cube(cube: Minecraft.Cube) {
           points={edgePoints}
           color='white'
           transparent
-          lineWidth={5}
+          lineWidth={4}
           segments
         />
       </group>

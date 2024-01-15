@@ -12,7 +12,7 @@ export default function BrushProvider({ children }: React.PropsWithChildren) {
 
   const drawBrush = useCallback(
     (layer: OffscreenCanvasRenderingContext2D) => {
-      layer.fillStyle = 'gray'
+      layer.fillStyle = 'red'
       if (brushRef.current) {
         const [x, y] = brushRef.current
         layer.fillRect(x, y, 1, 1)
