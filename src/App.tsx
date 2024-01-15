@@ -52,7 +52,7 @@ export default function App() {
     <div className='flex h-full w-full'>
       <div
         className={clsx(
-          'checkerboard relative flex flex-1 border-4 border-neutral-500 bg-white/5 p-2',
+          'checkerboard relative flex min-w-72 flex-1 border-4 border-neutral-500 bg-white/5 p-2',
           direction === 'horizontal' && 'flex-row',
           direction === 'vertical' && 'flex-col',
         )}
@@ -134,7 +134,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      <div className='w-72 border-4 border-l-0 border-neutral-500 bg-neutral-900'></div>
+      <div className='min-w-72 border-4 border-l-0 border-neutral-500 bg-neutral-900'></div>
     </div>
   )
 }
